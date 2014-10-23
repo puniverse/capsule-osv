@@ -26,12 +26,10 @@ public class OsvCapsule extends Capsule {
     private static final String CONF_FILE = "Capstanfile";
 
     private static final String PROP_FILE_SEPARATOR = "file.separator";
-    private static final String PROP_BUILD_IMAGE = "capsule.osv.build";
+    private static final String PROP_BUILD_IMAGE = "capsule.image";
     private static final String PROP_HYPERVISOR = "capsule.osv.hypervisor";
 
     private static final String ATTR_JAVA_VERSION = "Java-Version";
-    private static final String ATTR_MIN_JAVA_VERSION = "Min-Java-Version";
-    private static final String ATTR_MIN_UPDATE_VERSION = "Min-Update-Version";
 
     private static final String PATH_ROOT = "/";
     private static final String PATH_APP = PATH_ROOT + "app";
@@ -69,11 +67,11 @@ public class OsvCapsule extends Capsule {
     }
 
     @Override
-    protected ProcessBuilder buildProcess() {
+    protected ProcessBuilder prelaunch(List<String> args) {
         final boolean build = systemPropertyEmptyOrTrue(PROP_BUILD_IMAGE);
         try {
             // Use the original ProcessBuilder to create the Capstanfile
-            final ProcessBuilder pb = super.buildProcess();
+            final ProcessBuilder pb = super.prelaunch(args);
             this.confDir = getAppCache();
             writeCapstanfile(confDir.resolve(CONF_FILE), pb);
 
@@ -127,7 +125,7 @@ public class OsvCapsule extends Capsule {
             for (Path p : deps)
                 out.println(file(p));
 
-            out.println("cmdline: " + toStringValue(pb.command()));
+            // out.println("cmdline: " + toStringValue(pb.command()));
         }
     }
 
@@ -162,32 +160,6 @@ public class OsvCapsule extends Capsule {
     private String moveDep(Path p) {
         return PATH_DEP + "/" + p.getFileName();
     }
-
-//    private Path createConfDir() throws IOException {
-//        Path temp = Files.createTempDirectory("osv-");
-//        Path dir = temp.resolve(getAppId());
-//        Files.createDirectory(dir);
-//        return dir;
-//    }
-//
-//    private void deleteConfDir() throws IOException {
-//        Files.delete(confDir.resolve(CONF_FILE));
-//        Files.delete(confDir);
-//        Files.delete(confDir.getParent());
-//    }
-//
-//    @Override
-//    @SuppressWarnings("CallToPrintStackTrace")
-//    protected void cleanup() {
-//        super.cleanup();
-//
-//        try {
-//            if (confDir != null)
-//                deleteConfDir();
-//        } catch (Throwable t) {
-//            t.printStackTrace();
-//        }
-//    }
 
     private static String move(Path what, Path fromDir, String toDir) {
         assert what.startsWith(fromDir);
