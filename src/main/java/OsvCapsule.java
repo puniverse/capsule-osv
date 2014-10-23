@@ -49,6 +49,11 @@ public class OsvCapsule extends Capsule {
     }
 
     @Override
+    protected boolean needsAppCache() {
+        return true;
+    }
+
+    @Override
     protected String processOutgoingPath(Path p) {
         if (p == null)
             return null;
@@ -69,7 +74,7 @@ public class OsvCapsule extends Capsule {
         try {
             // Use the original ProcessBuilder to create the Capstanfile
             final ProcessBuilder pb = super.buildProcess();
-            this.confDir = createConfDir();
+            this.confDir = getAppCache();
             writeCapstanfile(confDir.resolve(CONF_FILE), pb);
 
             log(LOG_VERBOSE, "Capstanfile: " + confDir.resolve(CONF_FILE));
@@ -158,31 +163,31 @@ public class OsvCapsule extends Capsule {
         return PATH_DEP + "/" + p.getFileName();
     }
 
-    private Path createConfDir() throws IOException {
-        Path temp = Files.createTempDirectory("osv-");
-        Path dir = temp.resolve(getAppId());
-        Files.createDirectory(dir);
-        return dir;
-    }
-
-    private void deleteConfDir() throws IOException {
-        Files.delete(confDir.resolve(CONF_FILE));
-        Files.delete(confDir);
-        Files.delete(confDir.getParent());
-    }
-
-    @Override
-    @SuppressWarnings("CallToPrintStackTrace")
-    protected void cleanup() {
-        super.cleanup();
-
-        try {
-            if (confDir != null)
-                deleteConfDir();
-        } catch (Throwable t) {
-            t.printStackTrace();
-        }
-    }
+//    private Path createConfDir() throws IOException {
+//        Path temp = Files.createTempDirectory("osv-");
+//        Path dir = temp.resolve(getAppId());
+//        Files.createDirectory(dir);
+//        return dir;
+//    }
+//
+//    private void deleteConfDir() throws IOException {
+//        Files.delete(confDir.resolve(CONF_FILE));
+//        Files.delete(confDir);
+//        Files.delete(confDir.getParent());
+//    }
+//
+//    @Override
+//    @SuppressWarnings("CallToPrintStackTrace")
+//    protected void cleanup() {
+//        super.cleanup();
+//
+//        try {
+//            if (confDir != null)
+//                deleteConfDir();
+//        } catch (Throwable t) {
+//            t.printStackTrace();
+//        }
+//    }
 
     private static String move(Path what, Path fromDir, String toDir) {
         assert what.startsWith(fromDir);
