@@ -32,7 +32,7 @@ dependencies {
 }
 
 jar {
-    from { configurations.runtime } 
+    from { configurations.runtime.collect { zipTree(it) } }
     manifest {
         attributes(
 	    'Main-Class'  : mainClassName,
