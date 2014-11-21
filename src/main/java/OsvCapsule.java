@@ -5,6 +5,7 @@ import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
@@ -41,8 +42,12 @@ public class OsvCapsule extends Capsule {
     private final Set<Path> deps = new HashSet<>();
     private Path confDir;
 
-    public OsvCapsule(Path jarFile, Path cacheDir) {
-        super(jarFile, cacheDir);
+    static {
+        registerOption(PROP_BUILD_IMAGE, null, "false", "Builds an image without launching the app.");
+    }
+
+    public OsvCapsule(Capsule pred) {
+        super(pred);
         this.localRepo = getLocalRepo();
     }
 
@@ -68,7 +73,7 @@ public class OsvCapsule extends Capsule {
 
     @Override
     protected ProcessBuilder prelaunch(List<String> args) {
-        final boolean build = systemPropertyEmptyOrTrue(PROP_BUILD_IMAGE);
+        final boolean build = Boolean.parseBoolean(System.getProperty(PROP_BUILD_IMAGE));
         try {
             // Use the original ProcessBuilder to create the Capstanfile
             final ProcessBuilder pb = super.prelaunch(args);
@@ -109,7 +114,7 @@ public class OsvCapsule extends Capsule {
 
     @Override
     protected List<Path> getPlatformNativeLibraryPath() {
-        return Arrays.asList(Paths.get("/usr/java/packages/lib/amd64"), Paths.get("/usr/lib64"), Paths.get("/lib64"), Paths.get("/lib"), Paths.get("/usr/lib"));
+        return splitClassPath("/usr/java/packages/lib/amd64:/usr/lib64:/lib64:/lib:/usr/lib");
     }
 
     private void writeCapstanfile(Path file, ProcessBuilder pb) throws IOException {
@@ -195,10 +200,11 @@ public class OsvCapsule extends Capsule {
             return Integer.parseInt(vs[1]);
     }
 
-    private static boolean systemPropertyEmptyOrTrue(String property) {
-        final String value = System.getProperty(property);
-        if (value == null)
-            return false;
-        return value.isEmpty() || Boolean.parseBoolean(value);
+    private static List<Path> splitClassPath(String classPath) {
+        final String[] ps = classPath.split(":");
+        final List<Path> res = new ArrayList<>(ps.length);
+        for (String p : ps)
+            res.add(Paths.get(p));
+        return res;
     }
 }

@@ -6,7 +6,7 @@ targetCompatibility = '1.7'
 
 [compileJava, compileTestJava]*.options*.encoding = 'UTF-8'
 
-mainClassName = "OsvCapsule"
+mainClassName = 'Capsule'
 
 group       = "co.paralleluniverse"
 version     = "0.1.0"
@@ -36,6 +36,7 @@ jar {
     manifest {
         attributes(
 	    'Main-Class'  : mainClassName,
+            'Caplets'     : 'OsvCapsule'
         )
     }
 }
