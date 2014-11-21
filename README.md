@@ -1,6 +1,6 @@
 # Capsule Shield
 
-This is a caplet that wraps a [capsule](https://github.com/puniverse/capsule) into an [OSv](http://osv.io/) image.
+A caplet that wraps a [capsule](https://github.com/puniverse/capsule) in an [OSv](http://osv.io/) image.
 
 WORK IN PROGRESS
 
