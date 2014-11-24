@@ -123,7 +123,7 @@ public class OsvCapsule extends Capsule {
             for (Path p : deps)
                 out.println(file(p));
 
-            // out.println("cmdline: " + toStringValue(pb.command()));
+            out.println("cmdline: " + toStringValue(pb.command()));
         }
     }
 
