@@ -18,7 +18,6 @@ import java.nio.charset.Charset;
 import java.nio.file.*;
 import java.nio.file.attribute.FileTime;
 import java.util.*;
-import java.util.function.Predicate;
 
 /**
  *
@@ -179,14 +178,18 @@ public class OsvCapsule extends Capsule {
             out.println();
             final List<String> command = new ArrayList<>();
             command.addAll(pb.command());
-            command.removeIf(new Predicate<String>() {
-                @Override
-                public boolean test(String s) {
-                    return "-server".equals(s) || "-client".equals(s);
+            command.remove("-server");
+            command.remove("-client");
+            final Iterator<String> iter = command.iterator();
+            final StringBuilder sb = new StringBuilder();
+            if (iter.hasNext()) {
+                sb.append(iter.next());
+                while (iter.hasNext()) {
+                    sb.append(" ").append(iter.next());
                 }
-            });
-            out.println("cmdline: " + String.join(" ", command));
-            out.println();
+            }
+            final String joined = sb.toString();
+            out.println("cmdline: " + joined);
             out.println("files:");
             out.println(file(getJarFile()));
             if (getWritableAppCache() != null) {
