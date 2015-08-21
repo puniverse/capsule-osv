@@ -37,7 +37,7 @@ public class OsvCapsule extends Capsule {
     private static final Path PATH_DEP = PATH_ROOT.resolve("capsule").resolve("dep");
     private static final Path PATH_WRAPPER = PATH_ROOT.resolve("capsule").resolve("wrapper");
 
-    private static final Map.Entry<String, Boolean> PROP_BUILD_IMAGE = ATTRIBUTE("OSV-Image-Only", T_BOOL(), false, true, "Builds an image without launching the app.");
+    private static final Map.Entry<String, Boolean> PROP_ONLY_BUILD_IMAGE = ATTRIBUTE("OSV-Image-Only", T_BOOL(), false, true, "Builds an image without launching the app.");
 
     private static Path hostAbsoluteOwnJarFile;
 
@@ -94,12 +94,17 @@ public class OsvCapsule extends Capsule {
             // Use the original ProcessBuilder to create the Capstanfile
             final ProcessBuilder pb = super.prelaunch(newJvmArgs, args);
 
-            final boolean build = getAttribute(PROP_BUILD_IMAGE);
+            final boolean onlyBuild = getAttribute(PROP_ONLY_BUILD_IMAGE);
 
-            if (isBuildNeeded() && !build)
-                buildImage();
+            final String newCapstanFile = getCapstanfile(pb);
+            if (isBuildNeeded(newCapstanFile)) {
+                log(LOG_VERBOSE, "OSV image needs to be re-created");
+                writeFile(newCapstanFile, getConfFile());
+                log(LOG_VERBOSE, "Conf file written: " + getConfFile());
 
-            writeCapstanfile(pb);
+                if (!onlyBuild)
+                    buildImage();
+            }
 
             // ... and create a new ProcessBuilder to launch capstan
             final ProcessBuilder pb1 = new ProcessBuilder();
@@ -107,10 +112,10 @@ public class OsvCapsule extends Capsule {
 
             pb1.command().add("capstan");
 
-            pb1.command().add(build ? "build" : "run");
+            pb1.command().add(onlyBuild ? "onlyBuild" : "run");
             if (System.getProperty(PROP_HYPERVISOR) != null)
                 pb1.command().addAll(Arrays.asList("-p", System.getProperty(PROP_HYPERVISOR)));
-            if (build)
+            if (onlyBuild)
                 pb1.command().add(getAppId());
 
             return pb1;
@@ -139,7 +144,7 @@ public class OsvCapsule extends Capsule {
     }
 
     public Path getConfDir() throws IOException {
-        final Path ret = getWritableAppCache().resolve("osv");
+        final Path ret = appDir().resolve("osv");
         if (!Files.exists(ret))
             Files.createDirectories(ret);
         return ret;
@@ -149,9 +154,20 @@ public class OsvCapsule extends Capsule {
         return getConfDir().resolve(CONF_FILE);
     }
 
-    private boolean isBuildNeeded() throws IOException {
-        if (!Files.exists(getConfFile()))
+    private boolean isBuildNeeded(String capstanFile) throws IOException {
+        // Check if the conf file exists
+        if (!Files.exists(getConfFile())) {
+            log(LOG_VERBOSE, "Conf file " + getConfFile() + " is not present");
             return true;
+        }
+
+        // Check if the conf content has changed
+        if (!new String(Files.readAllBytes(getConfFile()), Charset.defaultCharset()).equals(capstanFile)) {
+            log(LOG_VERBOSE, "Conf file content " + getConfFile() + " has changed");
+            return true;
+        }
+
+        // Check if the application is newer
         try {
             FileTime jarTime = Files.getLastModifiedTime(getJarFile());
             if (isWrapperCapsule()) {
@@ -161,7 +177,11 @@ public class OsvCapsule extends Capsule {
             }
 
             final FileTime confTime = Files.getLastModifiedTime(getConfFile());
-            return confTime.compareTo(jarTime) < 0;
+
+            final boolean buildNeeded = confTime.compareTo(jarTime) < 0;
+            if (buildNeeded)
+                log(LOG_VERBOSE, "Application " + getJarFile() + " has changed");
+            return buildNeeded;
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -172,35 +192,42 @@ public class OsvCapsule extends Capsule {
         return splitClassPath("/usr/java/packages/lib/amd64:/usr/lib64:/lib64:/lib:/usr/lib");
     }
 
-    private void writeCapstanfile(ProcessBuilder pb) throws IOException {
-        try (final PrintWriter out = new PrintWriter(new OutputStreamWriter(Files.newOutputStream(getConfFile()), Charset.defaultCharset()))) {
-            out.println("base: " + getBaseImage());
-            out.println();
-            final List<String> command = new ArrayList<>();
-            command.addAll(pb.command());
-            command.remove("-server");
-            command.remove("-client");
-            final Iterator<String> iter = command.iterator();
-            final StringBuilder sb = new StringBuilder();
-            if (iter.hasNext()) {
-                sb.append(iter.next());
-                while (iter.hasNext()) {
-                    sb.append(" ").append(iter.next());
-                }
-            }
-            final String joined = sb.toString();
-            out.println("cmdline: " + joined);
-            out.println("files:");
-            out.println(file(getJarFile()));
-            if (getWritableAppCache() != null) {
-                for (Path p : listDir(getWritableAppCache(), "**", true))
-                    out.println(file(p));
-            }
-            for (Path p : deps)
-                out.println(file(p));
-
-            log(LOG_VERBOSE, "Written capstanfile: " + getConfFile());
+    private String getCapstanfile(ProcessBuilder pb) throws IOException {
+        final StringBuilder sb = new StringBuilder();
+        sb.append("base: ").append(getBaseImage()).append("\n\n");
+        sb.append("cmdline: ").append(getCommand(pb)).append("\n\n");
+        sb.append("files:\n");
+        sb.append(file(getJarFile())).append("\n");
+        final Path appDir = appDir();
+        if (appDir != null) {
+            for (Path p : listDir(appDir, "**", true))
+                sb.append(file(p)).append("\n");
         }
+        for (Path p : deps)
+            sb.append(file(p)).append("\n");
+        return sb.toString();
+    }
+
+    private void writeFile(String content, Path loc) throws IOException {
+        try (final PrintWriter out = new PrintWriter(new OutputStreamWriter(Files.newOutputStream(loc), Charset.defaultCharset()))) {
+            out.print(content);
+        }
+    }
+
+    private String getCommand(ProcessBuilder pb) {
+        final List<String> command = new ArrayList<>();
+        command.addAll(pb.command());
+        command.remove("-server");
+        command.remove("-client");
+        final Iterator<String> iter = command.iterator();
+        final StringBuilder sb = new StringBuilder();
+        if (iter.hasNext()) {
+            sb.append(iter.next());
+            while (iter.hasNext()) {
+                sb.append(" ").append(iter.next());
+            }
+        }
+        return sb.toString();
     }
 
     private String file(Path p) {
@@ -222,8 +249,8 @@ public class OsvCapsule extends Capsule {
             return moveJarFile(p);
         if (p.equals(findOwnJarFile()))
             return moveWrapperFile(p);
-        else if (getAppDir() != null && p.startsWith(getAppDir()))
-            return move(p, getAppDir(), PATH_APP);
+        else if (appDir() != null && p.startsWith(appDir()))
+            return move(p, appDir(), PATH_APP);
         else if (localRepo != null && p.startsWith(localRepo))
             return move(p, localRepo, PATH_DEP);
         else if (getPlatformNativeLibraryPath().contains(p))
