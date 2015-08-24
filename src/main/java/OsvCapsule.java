@@ -37,7 +37,7 @@ public class OsvCapsule extends Capsule {
     private static final Path PATH_DEP = PATH_ROOT.resolve("capsule").resolve("dep");
     private static final Path PATH_WRAPPER = PATH_ROOT.resolve("capsule").resolve("wrapper");
 
-    private static final Map.Entry<String, Boolean> PROP_ONLY_BUILD_IMAGE = ATTRIBUTE("OSV-Image-Only", T_BOOL(), false, true, "Builds an image without launching the app.");
+    private static final Map.Entry<String, Boolean> ATTR_ONLY_BUILD_IMAGE = ATTRIBUTE("OSv-Image-Only", T_BOOL(), false, true, "Builds an image without launching the app.");
 
     private static Path hostAbsoluteOwnJarFile;
 
@@ -94,7 +94,7 @@ public class OsvCapsule extends Capsule {
             // Use the original ProcessBuilder to create the Capstanfile
             final ProcessBuilder pb = super.prelaunch(newJvmArgs, args);
 
-            final boolean onlyBuild = getAttribute(PROP_ONLY_BUILD_IMAGE);
+            final boolean onlyBuild = getAttribute(ATTR_ONLY_BUILD_IMAGE);
 
             final String newCapstanFile = getCapstanfile(pb);
             if (isBuildNeeded(newCapstanFile)) {
