@@ -26,15 +26,18 @@ It can be both run against (or embedded in) plain (e.g. "fat") capsules and [Mav
 
 ## Additional Capsule manifest entries
 
-The following additional manifest entries can be used:
+The following additional manifest entries can be used (see the [Capstan docs](https://github.com/cloudius-systems/capstan#capstan) for further details):
 
- * `OSv-Image-Only`: builds an image without launching the app.
+ * `Image-Only`: builds an image without launching the app.
+ * `Port-Forward`: configure OSv port forwarding.
+ * `Network-Type`: configure OSv network type.
+ * `Physical-NIC-Name`: configure OSv physical NIC name (needed with VirtualBox).
 
-The `capsule.osv.hypervisor` system property allows to specify a non-default hypervisor to be used by OSV (see the [Capstan docs](https://github.com/cloudius-systems/capstan#capstan)).
+The `capsule.osv.hypervisor` system property allows to specify a non-default hypervisor to be used by OSV.
 
 ## Known caveats
 
-Java agents don't work due to [this OSv issue](https://github.com/cloudius-systems/osv/issues/528).
+At present Java agents don't work (see [this OSv issue](https://github.com/cloudius-systems/osv/issues/528))
 
 ## License
 
