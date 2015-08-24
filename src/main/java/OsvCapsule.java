@@ -37,7 +37,10 @@ public class OsvCapsule extends Capsule {
     private static final Path PATH_DEP = PATH_ROOT.resolve("capsule").resolve("dep");
     private static final Path PATH_WRAPPER = PATH_ROOT.resolve("capsule").resolve("wrapper");
 
-    private static final Map.Entry<String, Boolean> ATTR_ONLY_BUILD_IMAGE = ATTRIBUTE("OSv-Image-Only", T_BOOL(), false, true, "Builds an image without launching the app.");
+    private static final Map.Entry<String, Boolean> ATTR_ONLY_BUILD_IMAGE = ATTRIBUTE("Image-Only", T_BOOL(), false, true, "Builds an image without launching the app.");
+    private static final Map.Entry<String, String> ATTR_PORT_FORWARD = ATTRIBUTE("Port-Forward", T_STRING(), null, true, "Configure OSv port forwarding.");
+    private static final Map.Entry<String, String> ATTR_NETWORK_TYPE = ATTRIBUTE("Network-Type", T_STRING(), null, true, "Configure OSv network type.");
+    private static final Map.Entry<String, String> ATTR_PHYSICAL_NIC_NAME = ATTRIBUTE("Physical-NIC-Name", T_STRING(), null, true, "Configure OSv physical NIC name (f.e. mandatory under VirtualBox hypervisor).");
 
     private static Path hostAbsoluteOwnJarFile;
 
@@ -113,8 +116,17 @@ public class OsvCapsule extends Capsule {
             pb1.command().add("capstan");
 
             pb1.command().add(onlyBuild ? "onlyBuild" : "run");
+
             if (System.getProperty(PROP_HYPERVISOR) != null)
                 pb1.command().addAll(Arrays.asList("-p", System.getProperty(PROP_HYPERVISOR)));
+
+            if (getAttribute(ATTR_PORT_FORWARD) != null)
+                pb1.command().addAll(Arrays.asList("-f", getAttribute(ATTR_PORT_FORWARD)));
+            if (getAttribute(ATTR_NETWORK_TYPE) != null)
+                pb1.command().addAll(Arrays.asList("-n", getAttribute(ATTR_NETWORK_TYPE)));
+            if (getAttribute(ATTR_PHYSICAL_NIC_NAME) != null)
+                pb1.command().addAll(Arrays.asList("-b", getAttribute(ATTR_PHYSICAL_NIC_NAME)));
+
             if (onlyBuild)
                 pb1.command().add(getAppId());
 
