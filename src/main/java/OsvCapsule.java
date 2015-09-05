@@ -102,7 +102,7 @@ public class OsvCapsule extends Capsule {
             final String newCapstanFile = getCapstanfile(pb);
             if (isBuildNeeded(newCapstanFile)) {
                 log(LOG_VERBOSE, "OSV image needs to be re-created");
-                writeFile(newCapstanFile, getConfFile());
+                dump(newCapstanFile, getConfFile());
                 log(LOG_VERBOSE, "Conf file written: " + getConfFile());
 
                 if (!onlyBuild)
@@ -155,14 +155,14 @@ public class OsvCapsule extends Capsule {
         log(LOG_VERBOSE, "OSV image re-created");
     }
 
-    public Path getConfDir() throws IOException {
+    private Path getConfDir() throws IOException {
         final Path ret = appDir().resolve("osv");
         if (!Files.exists(ret))
             Files.createDirectories(ret);
         return ret;
     }
 
-    public Path getConfFile() throws IOException {
+    private Path getConfFile() throws IOException {
         return getConfDir().resolve(CONF_FILE);
     }
 
@@ -220,28 +220,6 @@ public class OsvCapsule extends Capsule {
         return sb.toString();
     }
 
-    private void writeFile(String content, Path loc) throws IOException {
-        try (final PrintWriter out = new PrintWriter(new OutputStreamWriter(Files.newOutputStream(loc), Charset.defaultCharset()))) {
-            out.print(content);
-        }
-    }
-
-    private String getCommand(ProcessBuilder pb) {
-        final List<String> command = new ArrayList<>();
-        command.addAll(pb.command());
-        command.remove("-server");
-        command.remove("-client");
-        final Iterator<String> iter = command.iterator();
-        final StringBuilder sb = new StringBuilder();
-        if (iter.hasNext()) {
-            sb.append(iter.next());
-            while (iter.hasNext()) {
-                sb.append(" ").append(iter.next());
-            }
-        }
-        return sb.toString();
-    }
-
     private String file(Path p) {
         return "  " + move(p) + ": " + p;
     }
@@ -273,14 +251,6 @@ public class OsvCapsule extends Capsule {
             throw new IllegalArgumentException("Unexpected file " + p);
     }
 
-    private Path moveJarFile(Path p) {
-        return PATH_ROOT.resolve(p.getFileName());
-    }
-
-    private Path moveWrapperFile(Path p) {
-        return PATH_WRAPPER.resolve(p.getFileName());
-    }
-
     private String getBaseImage() {
         if (hasAttribute(Capsule.ATTR_JAVA_VERSION)) {
             switch (javaVersion(getAttribute(Capsule.ATTR_JAVA_VERSION))) {
@@ -296,6 +266,22 @@ public class OsvCapsule extends Capsule {
             return "cloudius/osv-openjdk8";
     }
 
+    private static String getCommand(ProcessBuilder pb) {
+        final List<String> command = new ArrayList<>();
+        command.addAll(pb.command());
+        command.remove("-server");
+        command.remove("-client");
+        final Iterator<String> iter = command.iterator();
+        final StringBuilder sb = new StringBuilder();
+        if (iter.hasNext()) {
+            sb.append(iter.next());
+            while (iter.hasNext()) {
+                sb.append(" ").append(iter.next());
+            }
+        }
+        return sb.toString();
+    }
+
     // TODO Factor out this common utilities
     //<editor-fold defaultstate="collapsed" desc="Both capsule- and container-related overrides & utils">
     private Path getLocalRepo() {
@@ -307,6 +293,20 @@ public class OsvCapsule extends Capsule {
         } catch (ReflectiveOperationException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    private static void dump(String content, Path loc) throws IOException {
+        try (final PrintWriter out = new PrintWriter(new OutputStreamWriter(Files.newOutputStream(loc), Charset.defaultCharset()))) {
+            out.print(content);
+        }
+    }
+
+    private static Path moveJarFile(Path p) {
+        return PATH_ROOT.resolve(p.getFileName());
+    }
+
+    private static Path moveWrapperFile(Path p) {
+        return PATH_WRAPPER.resolve(p.getFileName());
     }
 
     private static <T extends AccessibleObject> T accessible(T obj) {
