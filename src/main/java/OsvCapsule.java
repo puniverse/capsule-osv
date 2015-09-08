@@ -30,14 +30,17 @@ public class OsvCapsule extends Capsule {
     private static final String PROP_JAVA_VERSION = "java.version";
     private static final String PROP_JAVA_HOME = "java.home";
 
+    private static final String PROP_ONLY_BUILD = "capsule.osv.onlyBuild";
     private static final String PROP_HYPERVISOR = "capsule.osv.hypervisor";
+    private static final String PROP_PORT_FORWARD = "capsule.osv.portForward";
+    private static final String PROP_NETWORK_TYPE = "capsule.osv.networkType";
+    private static final String PROP_PHYSICAL_NIC_NAME = "capsule.osv.physicalNICName";
 
     private static final Path PATH_ROOT = Paths.get(File.separator);
     private static final Path PATH_APP = PATH_ROOT.resolve("capsule").resolve("app");
     private static final Path PATH_DEP = PATH_ROOT.resolve("capsule").resolve("dep");
     private static final Path PATH_WRAPPER = PATH_ROOT.resolve("capsule").resolve("wrapper");
 
-    private static final Map.Entry<String, Boolean> ATTR_ONLY_BUILD_IMAGE = ATTRIBUTE("Image-Only", T_BOOL(), false, true, "Builds an image without launching the app.");
     private static final Map.Entry<String, String> ATTR_PORT_FORWARD = ATTRIBUTE("Port-Forward", T_STRING(), null, true, "Configure OSv port forwarding.");
     private static final Map.Entry<String, String> ATTR_NETWORK_TYPE = ATTRIBUTE("Network-Type", T_STRING(), null, true, "Configure OSv network type.");
     private static final Map.Entry<String, String> ATTR_PHYSICAL_NIC_NAME = ATTRIBUTE("Physical-NIC-Name", T_STRING(), null, true, "Configure OSv physical NIC name (f.e. mandatory under VirtualBox hypervisor).");
@@ -97,7 +100,10 @@ public class OsvCapsule extends Capsule {
             // Use the original ProcessBuilder to create the Capstanfile
             final ProcessBuilder pb = super.prelaunch(newJvmArgs, args);
 
-            final boolean onlyBuild = getAttribute(ATTR_ONLY_BUILD_IMAGE);
+            boolean onlyBuild = false;
+            try {
+                onlyBuild = Boolean.parseBoolean(System.getProperty(PROP_ONLY_BUILD));
+            } catch (Throwable ignored) {}
 
             final String newCapstanFile = getCapstanfile(pb);
             if (isBuildNeeded(newCapstanFile)) {
@@ -120,12 +126,15 @@ public class OsvCapsule extends Capsule {
             if (System.getProperty(PROP_HYPERVISOR) != null)
                 pb1.command().addAll(Arrays.asList("-p", System.getProperty(PROP_HYPERVISOR)));
 
-            if (getAttribute(ATTR_PORT_FORWARD) != null)
-                pb1.command().addAll(Arrays.asList("-f", getAttribute(ATTR_PORT_FORWARD)));
-            if (getAttribute(ATTR_NETWORK_TYPE) != null)
-                pb1.command().addAll(Arrays.asList("-n", getAttribute(ATTR_NETWORK_TYPE)));
-            if (getAttribute(ATTR_PHYSICAL_NIC_NAME) != null)
-                pb1.command().addAll(Arrays.asList("-b", getAttribute(ATTR_PHYSICAL_NIC_NAME)));
+            final String portForward = getPropertyOrAttributeString(PROP_PORT_FORWARD, ATTR_PORT_FORWARD);
+            if (portForward != null)
+                pb1.command().addAll(Arrays.asList("-f", portForward));
+            final String networkType = getPropertyOrAttributeString(PROP_NETWORK_TYPE, ATTR_NETWORK_TYPE);
+            if (networkType != null)
+                pb1.command().addAll(Arrays.asList("-n", networkType));
+            final String physicalNICName = getPropertyOrAttributeString(PROP_PHYSICAL_NIC_NAME, ATTR_PHYSICAL_NIC_NAME);
+            if (physicalNICName != null)
+                pb1.command().addAll(Arrays.asList("-b", physicalNICName));
 
             if (onlyBuild)
                 pb1.command().add(getAppId());
@@ -422,6 +431,13 @@ public class OsvCapsule extends Capsule {
         }
 
         return res;
+    }
+
+    private String getPropertyOrAttributeString(String propName, Map.Entry<String, String> attr) {
+        final String propValue = System.getProperty(propName);
+        if (propValue == null)
+            return getAttribute(attr);
+        return propValue;
     }
     //</editor-fold>
 }
