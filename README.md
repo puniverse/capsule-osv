@@ -30,7 +30,7 @@ The following additional manifest entries and system properties can be used (see
 
  * `capsule.osv.buildOnly` system property: builds an image without launching the app (default: false).
  * `capsule.osv.hypervisor` system property: allows to specify a non-default hypervisor to be used by OSV (default: KVM on Linux).
- * `Port-Forward` manifest entry: configure OSv port forwarding (default: none). The `capsule.osv.portForward` system property can override it.
+ * `Port-Forward` manifest entry: configure OSv port forwarding (default: _none_). The `capsule.osv.portForward` system property can override it.
  * `Network-Type`: configure OSv network type (default: user networking on KVM). The `capsule.osv.networkType` system property can override it.
  * `Physical-NIC-Name`: configure OSv physical NIC name (needed with VirtualBox). The `capsule.osv.physicalNICName` system property can override it.
 
